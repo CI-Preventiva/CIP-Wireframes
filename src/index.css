@@ -1,0 +1,31 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #fafafa;
+  min-height: 100vh;
+}
+
+/* Wireframe aesthetic - dashed borders for placeholders */
+.wireframe-placeholder {
+  border: 2px dashed #d4d4d4;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #737373;
+  font-size: 0.875rem;
+}
+
+/* Annotation style for wireframes */
+.wireframe-annotation {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  border-radius: 4px;
+}
