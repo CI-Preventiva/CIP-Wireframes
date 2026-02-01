@@ -20,7 +20,8 @@ import {
   Divider,
   Center,
   ThemeIcon,
-  Tooltip
+  Tooltip,
+  SegmentedControl
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { useForm } from '@mantine/form'
@@ -38,9 +39,12 @@ import {
   IconUpload,
   IconFilter,
   IconUsers,
-  IconInfoCircle
+  IconInfoCircle,
+  IconHierarchy,
+  IconList
 } from '@tabler/icons-react'
 import { InfoTooltip } from '../../components/InfoTooltip'
+import { OrganizationTree } from '../../components/OrganizationTree'
 
 interface User {
   id: string
@@ -110,6 +114,7 @@ export function UsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'list' | 'tree'>('list')
 
   const form = useForm({
     initialValues: {
@@ -206,201 +211,226 @@ export function UsersPage() {
         </Group>
       </Group>
 
-      {/* Filters */}
-      <Group>
-        <TextInput
-          placeholder="Buscar por email o nombre..."
-          leftSection={<IconSearch size={16} />}
-          value={search}
-          onChange={(e) => setSearch(e.currentTarget.value)}
-          w={300}
-        />
-        <Select
-          placeholder="Filtrar por estado"
-          leftSection={<IconFilter size={16} />}
+      {/* Filters & View Toggle */}
+      <Group justify="space-between">
+        <Group>
+          <TextInput
+            placeholder="Buscar por email o nombre..."
+            leftSection={<IconSearch size={16} />}
+            value={search}
+            onChange={(e) => setSearch(e.currentTarget.value)}
+            w={300}
+          />
+          <Select
+            placeholder="Filtrar por estado"
+            leftSection={<IconFilter size={16} />}
+            data={[
+              { value: 'ACTIVE', label: 'Activos' },
+              { value: 'INVITED', label: 'Invitados' },
+              { value: 'SUSPENDED', label: 'Suspendidos' },
+            ]}
+            value={statusFilter}
+            onChange={setStatusFilter}
+            clearable
+            w={180}
+          />
+        </Group>
+
+        <SegmentedControl
+          value={viewMode}
+          onChange={(value) => setViewMode(value as 'list' | 'tree')}
           data={[
-            { value: 'ACTIVE', label: 'Activos' },
-            { value: 'INVITED', label: 'Invitados' },
-            { value: 'SUSPENDED', label: 'Suspendidos' },
+            {
+              value: 'list',
+              label: (
+                <Center style={{ gap: 10 }}>
+                  <IconList size={16} />
+                  <span>Lista</span>
+                </Center>
+              )
+            },
+            {
+              value: 'tree',
+              label: (
+                <Center style={{ gap: 10 }}>
+                  <IconHierarchy size={16} />
+                  <span>Organigrama</span>
+                </Center>
+              )
+            }
           ]}
-          value={statusFilter}
-          onChange={setStatusFilter}
-          clearable
-          w={180}
         />
       </Group>
 
-      {/* Stats */}
-      <Group>
-        <Badge variant="light" color="gray" size="lg">
-          Total: {users.length}
-        </Badge>
-        <Badge variant="light" color="green" size="lg">
-          Activos: {users.filter(u => u.status === 'ACTIVE').length}
-        </Badge>
-        <Badge variant="light" color="blue" size="lg">
-          Invitados: {users.filter(u => u.status === 'INVITED').length}
-        </Badge>
-        <Badge variant="light" color="red" size="lg">
-          Suspendidos: {users.filter(u => u.status === 'SUSPENDED').length}
-        </Badge>
-      </Group>
+      {/* Stats (only show in list view for context) */}
+      {viewMode === 'list' && (
+        <Group>
+          <Badge variant="light" color="gray" size="lg">
+            Total: {users.length}
+          </Badge>
+          <Badge variant="light" color="green" size="lg">
+            Activos: {users.filter(u => u.status === 'ACTIVE').length}
+          </Badge>
+          <Badge variant="light" color="blue" size="lg">
+            Invitados: {users.filter(u => u.status === 'INVITED').length}
+          </Badge>
+          <Badge variant="light" color="red" size="lg">
+            Suspendidos: {users.filter(u => u.status === 'SUSPENDED').length}
+          </Badge>
+        </Group>
+      )}
 
-      {/* Table with Empty State */}
-      <Paper withBorder>
-        {filteredUsers.length > 0 ? (
-          <Table striped highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Usuario</Table.Th>
-                <Table.Th>Cargo</Table.Th>
-                <Table.Th>Rol</Table.Th>
-                <Table.Th>Filial / Área</Table.Th>
-                <Table.Th>
-                  <Group gap={4}>
-                    Alcance
-                    <InfoTooltip
-                      label="El alcance define qué datos puede visualizar cada usuario según su rol y área asignada"
-                      multiline
-                      maxWidth={200}
-                    />
-                  </Group>
-                </Table.Th>
-                <Table.Th>
-                  <Group gap={4}>
-                    Estado
-                    <Tooltip label="Invitado: usuario pendiente de activación | Activo: usuario con acceso completo | Suspendido: acceso temporalmente deshabilitado" multiline w={250} withArrow>
-                      <ActionIcon variant="subtle" color="gray" size="xs" style={{ cursor: 'help' }}>
-                        <IconInfoCircle size={14} />
-                      </ActionIcon>
-                    </Tooltip>
-                  </Group>
-                </Table.Th>
-                <Table.Th w={100}>Acciones</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {filteredUsers.map((user) => (
-                <Table.Tr key={user.id}>
-                  <Table.Td>
-                    <Group gap="sm">
-                      <Avatar size="sm" radius="xl" color="dark">
-                        {getInitials(user)}
-                      </Avatar>
-                      <Box>
-                        <Text size="sm" fw={500}>
-                          {user.firstName && user.lastName
-                            ? `${user.firstName} ${user.lastName}`
-                            : '(Sin completar)'}
-                        </Text>
-                        <Text size="xs" c="dimmed">{user.email}</Text>
-                      </Box>
-                    </Group>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm">{user.jobTitle || '-'}</Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Badge variant="light" color="dark">{user.role}</Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm">{user.subsidiary}</Text>
-                    <Text size="xs" c="dimmed">{user.primaryArea}</Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="xs">
-                      {scopeModes.find(s => s.value === user.scopeMode)?.label || user.scopeMode}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Badge variant="light" color={statusColors[user.status]}>
-                      {statusLabels[user.status]}
-                    </Badge>
-                  </Table.Td>
-                  <Table.Td>
+      {/* Content based on view mode */}
+      {viewMode === 'tree' ? (
+        <Paper withBorder>
+          <OrganizationTree users={users} />
+        </Paper>
+      ) : (
+        <Paper withBorder>
+          {filteredUsers.length > 0 ? (
+            <Table striped highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Usuario</Table.Th>
+                  <Table.Th>Cargo</Table.Th>
+                  <Table.Th>Rol</Table.Th>
+                  <Table.Th>Filial / Área</Table.Th>
+                  <Table.Th>
                     <Group gap={4}>
-                      {user.status === 'ACTIVE' && (
-                        <Tooltip label="Suspender usuario" withArrow position="left">
-                          <ActionIcon
-                            variant="subtle"
-                            color="red"
-                            size="sm"
-                            onClick={() => toggleStatus(user.id, 'SUSPENDED')}
-                          >
-                            <IconPlayerPause size={16} />
-                          </ActionIcon>
-                        </Tooltip>
-                      )}
-                      {user.status === 'SUSPENDED' && (
-                        <Tooltip label="Reactivar usuario" withArrow position="left">
-                          <ActionIcon
-                            variant="subtle"
-                            color="green"
-                            size="sm"
-                            onClick={() => toggleStatus(user.id, 'ACTIVE')}
-                          >
-                            <IconPlayerPlay size={16} />
-                          </ActionIcon>
-                        </Tooltip>
-                      )}
-
-                      <Menu shadow="md" width={200}>
-                        <Menu.Target>
-                          <Tooltip label="Más opciones" withArrow position="left">
-                            <ActionIcon variant="subtle" color="gray">
-                              <IconDotsVertical size={16} />
+                      Alcance
+                      <InfoTooltip
+                        label="El alcance define qué datos puede visualizar cada usuario según su rol y área asignada"
+                        multiline
+                        maxWidth={200}
+                      />
+                    </Group>
+                  </Table.Th>
+                  <Table.Th>
+                    <Group gap={4}>
+                      Estado
+                      <Tooltip label="Invitado: usuario pendiente de activación | Activo: usuario con acceso completo | Suspendido: acceso temporalmente deshabilitado" multiline w={250} withArrow>
+                        <ActionIcon variant="subtle" color="gray" size="xs" style={{ cursor: 'help' }}>
+                          <IconInfoCircle size={14} />
+                        </ActionIcon>
+                      </Tooltip>
+                    </Group>
+                  </Table.Th>
+                  <Table.Th w={100}>Acciones</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {filteredUsers.map((user) => (
+                  <Table.Tr key={user.id}>
+                    <Table.Td>
+                      <Group gap="sm">
+                        <Avatar size="sm" radius="xl" color="dark">
+                          {getInitials(user)}
+                        </Avatar>
+                        <Box>
+                          <Text size="sm" fw={500}>
+                            {user.firstName && user.lastName
+                              ? `${user.firstName} ${user.lastName}`
+                              : '(Sin completar)'}
+                          </Text>
+                          <Text size="xs" c="dimmed">{user.email}</Text>
+                        </Box>
+                      </Group>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm">{user.jobTitle || '-'}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge variant="light" color="dark">{user.role}</Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm">{user.subsidiary}</Text>
+                      <Text size="xs" c="dimmed">{user.primaryArea}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="xs">
+                        {scopeModes.find(s => s.value === user.scopeMode)?.label || user.scopeMode}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge variant="light" color={statusColors[user.status]}>
+                        {statusLabels[user.status]}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Group gap={4}>
+                        {user.status === 'ACTIVE' && (
+                          <Tooltip label="Suspender usuario" withArrow position="left">
+                            <ActionIcon
+                              variant="subtle"
+                              color="red"
+                              size="sm"
+                              onClick={() => toggleStatus(user.id, 'SUSPENDED')}
+                            >
+                              <IconPlayerPause size={16} />
                             </ActionIcon>
                           </Tooltip>
-                        </Menu.Target>
-                        <Menu.Dropdown>
-                          <Menu.Item
-                            leftSection={<IconEdit size={14} />}
-                            onClick={() => handleOpenEdit(user)}
-                          >
-                            Editar
-                          </Menu.Item>
-                          {user.status === 'INVITED' && (
-                            <>
-                              <Menu.Item leftSection={<IconMailForward size={14} />}>
-                                Reenviar invitación
-                              </Menu.Item>
-                              <Menu.Item leftSection={<IconMailOff size={14} />} color="orange">
-                                Revocar invitación
-                              </Menu.Item>
-                            </>
-                          )}
-                        </Menu.Dropdown>
-                      </Menu>
-                    </Group>
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        ) : (
-          <Center p="xl" style={{ flexDirection: 'column', gap: 16 }}>
-            <ThemeIcon size={64} radius="xl" color="gray" variant="light">
-              <IconUsers size={32} />
-            </ThemeIcon>
-            <Stack gap={4} align="center">
-              <Text fw={500}>No se encontraron usuarios</Text>
-              <Text size="sm" c="dimmed">
-                {search || statusFilter ? 'Prueba cambiando los filtros de búsqueda.' : 'Comienza invitando a tu primer usuario o importándolos masivamente.'}
-              </Text>
-            </Stack>
-            {!search && !statusFilter && (
-              <Group>
-                <Button leftSection={<IconPlus size={16} />} onClick={handleOpenNew}>
-                  Invitar usuario
-                </Button>
-                <Button variant="light" leftSection={<IconUpload size={16} />} component={Link} to="/admin/users/bulk-import">
-                  Carga masiva
-                </Button>
-              </Group>
-            )}
-          </Center>
-        )}
-      </Paper>
+                        )}
+                        {user.status === 'SUSPENDED' && (
+                          <Tooltip label="Reactivar usuario" withArrow position="left">
+                            <ActionIcon
+                              variant="subtle"
+                              color="green"
+                              size="sm"
+                              onClick={() => toggleStatus(user.id, 'ACTIVE')}
+                            >
+                              <IconPlayerPlay size={16} />
+                            </ActionIcon>
+                          </Tooltip>
+                        )}
+
+                        <Menu shadow="md" width={200}>
+                          <Menu.Target>
+                            <Tooltip label="Más opciones" withArrow position="left">
+                              <ActionIcon variant="subtle" color="gray">
+                                <IconDotsVertical size={16} />
+                              </ActionIcon>
+                            </Tooltip>
+                          </Menu.Target>
+                          <Menu.Dropdown>
+                            <Menu.Item
+                              leftSection={<IconEdit size={14} />}
+                              onClick={() => handleOpenEdit(user)}
+                            >
+                              Editar
+                            </Menu.Item>
+                            {user.status === 'INVITED' && (
+                              <>
+                                <Menu.Item leftSection={<IconMailForward size={14} />}>
+                                  Reenviar invitación
+                                </Menu.Item>
+                                <Menu.Item leftSection={<IconMailOff size={14} />} color="orange">
+                                  Revocar invitación
+                                </Menu.Item>
+                              </>
+                            )}
+                          </Menu.Dropdown>
+                        </Menu>
+                      </Group>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          ) : (
+            <Center p="xl" style={{ flexDirection: 'column', gap: 16 }}>
+              <ThemeIcon size={64} radius="xl" color="gray" variant="light">
+                <IconUsers size={32} />
+              </ThemeIcon>
+              <Stack gap={4} align="center">
+                <Text fw={500}>No se encontraron usuarios</Text>
+                <Text size="sm" c="dimmed">
+                  {search || statusFilter ? 'Prueba cambiando los filtros de búsqueda.' : 'Comienza invitando a tu primer usuario o importándolos masivamente.'}
+                </Text>
+              </Stack>
+            </Center>
+          )}
+        </Paper>
+      )}
 
       {/* Modal */}
       <Modal
@@ -446,7 +476,7 @@ export function UsersPage() {
                 <Select
                   label="Rol"
                   placeholder="Seleccionar rol"
-                  data={roles}
+                  data={roles.map(r => ({ value: r.value, label: r.label }))}
                   withAsterisk
                   style={{ flex: 1 }}
                   {...form.getInputProps('role')}
@@ -477,7 +507,7 @@ export function UsersPage() {
               <Select
                 label="Área principal"
                 placeholder="Seleccionar área"
-                data={areas}
+                data={areas.map(a => ({ value: a.value, label: `${a.group} - ${a.label}` }))}
                 withAsterisk
                 {...form.getInputProps('primaryArea')}
               />
