@@ -18,7 +18,8 @@ import {
   SimpleGrid,
   Divider,
   ThemeIcon,
-  Center
+  Center,
+  Tooltip
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { useForm } from '@mantine/form'
@@ -33,6 +34,7 @@ import {
   IconLock,
   IconUsers
 } from '@tabler/icons-react'
+import { InfoTooltip } from '../../components/InfoTooltip'
 
 interface Permission {
   id: string
@@ -69,35 +71,35 @@ const permissionsCatalog: Permission[] = [
 ]
 
 const mockRoles: Role[] = [
-  { 
-    id: '1', 
-    name: 'Owner/Admin', 
-    description: 'Administrador con todos los permisos', 
-    isProtected: true, 
+  {
+    id: '1',
+    name: 'Owner/Admin',
+    description: 'Administrador con todos los permisos',
+    isProtected: true,
     usersCount: 2,
     permissions: ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10']
   },
-  { 
-    id: '2', 
-    name: 'Supervisor', 
-    description: 'Supervisor de área con acceso limitado', 
-    isProtected: false, 
+  {
+    id: '2',
+    name: 'Supervisor',
+    description: 'Supervisor de área con acceso limitado',
+    isProtected: false,
     usersCount: 8,
     permissions: ['p1', 'p3']
   },
-  { 
-    id: '3', 
-    name: 'Trabajador', 
-    description: 'Usuario básico sin permisos de administración', 
-    isProtected: false, 
+  {
+    id: '3',
+    name: 'Trabajador',
+    description: 'Usuario básico sin permisos de administración',
+    isProtected: false,
     usersCount: 35,
     permissions: []
   },
-  { 
-    id: '4', 
-    name: 'Auditor', 
-    description: 'Solo lectura para auditorías', 
-    isProtected: false, 
+  {
+    id: '4',
+    name: 'Auditor',
+    description: 'Solo lectura para auditorías',
+    isProtected: false,
     usersCount: 3,
     permissions: ['p1', 'p8']
   },
@@ -138,7 +140,7 @@ export function RolesPage() {
 
   const handleSubmit = form.onSubmit((values) => {
     if (editingRole) {
-      setRoles(r => r.map(role => 
+      setRoles(r => r.map(role =>
         role.id === editingRole.id ? { ...role, ...values } : role
       ))
     } else {
@@ -162,7 +164,7 @@ export function RolesPage() {
     }
   }
 
-  const filteredRoles = roles.filter(r => 
+  const filteredRoles = roles.filter(r =>
     r.name.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -178,7 +180,14 @@ export function RolesPage() {
       {/* Header */}
       <Group justify="space-between">
         <Box>
-          <Title order={2}>Roles y Permisos</Title>
+          <Group gap={4}>
+            <Title order={2}>Roles y Permisos</Title>
+            <InfoTooltip
+              label="Los roles definen conjuntos de permisos que controlan qué acciones puede realizar cada usuario en la plataforma. Asigna roles a usuarios según sus responsabilidades."
+              multiline
+              maxWidth={300}
+            />
+          </Group>
           <Text c="dimmed">Configura roles personalizados con permisos específicos</Text>
         </Box>
         <Button leftSection={<IconPlus size={16} />} onClick={handleOpenNew}>
@@ -202,9 +211,9 @@ export function RolesPage() {
             <Paper key={role.id} withBorder p="md">
               <Group justify="space-between" mb="sm">
                 <Group gap="xs">
-                  <ThemeIcon 
-                    size="lg" 
-                    variant="light" 
+                  <ThemeIcon
+                    size="lg"
+                    variant="light"
                     color={role.isProtected ? 'yellow' : 'dark'}
                   >
                     {role.isProtected ? <IconLock size={18} /> : <IconShield size={18} />}
@@ -213,7 +222,16 @@ export function RolesPage() {
                     <Group gap="xs">
                       <Text fw={600}>{role.name}</Text>
                       {role.isProtected && (
-                        <Badge size="xs" color="yellow" variant="light">Protegido</Badge>
+                        <Badge size="xs" color="yellow" variant="light">
+                          Protegido
+                        </Badge>
+                      )}
+                      {role.isProtected && (
+                        <InfoTooltip
+                          label="Los roles protegidos no se pueden editar ni eliminar porque son críticos para el funcionamiento del sistema."
+                          multiline
+                          maxWidth={220}
+                        />
                       )}
                     </Group>
                   </Box>
@@ -221,19 +239,21 @@ export function RolesPage() {
                 {!role.isProtected && (
                   <Menu shadow="md" width={180}>
                     <Menu.Target>
-                      <ActionIcon variant="subtle" color="gray">
-                        <IconDotsVertical size={16} />
-                      </ActionIcon>
+                      <Tooltip label="Más opciones" withArrow position="left">
+                        <ActionIcon variant="subtle" color="gray">
+                          <IconDotsVertical size={16} />
+                        </ActionIcon>
+                      </Tooltip>
                     </Menu.Target>
                     <Menu.Dropdown>
-                      <Menu.Item 
+                      <Menu.Item
                         leftSection={<IconEdit size={14} />}
                         onClick={() => handleOpenEdit(role)}
                       >
                         Editar
                       </Menu.Item>
                       <Menu.Divider />
-                      <Menu.Item 
+                      <Menu.Item
                         leftSection={<IconTrash size={14} />}
                         color="red"
                         disabled={role.usersCount > 0}
@@ -244,11 +264,11 @@ export function RolesPage() {
                   </Menu>
                 )}
               </Group>
-              
+
               {role.description && (
                 <Text size="sm" c="dimmed" mb="sm">{role.description}</Text>
               )}
-              
+
               <Group gap="xs" mb="md">
                 <Badge variant="light" color="gray" leftSection={<IconUsers size={12} />}>
                   {role.usersCount} usuarios
@@ -258,9 +278,9 @@ export function RolesPage() {
                 </Badge>
               </Group>
 
-              <Button 
-                variant="light" 
-                size="xs" 
+              <Button
+                variant="light"
+                size="xs"
                 fullWidth
                 onClick={() => handleOpenEdit(role)}
                 disabled={role.isProtected}
@@ -292,9 +312,9 @@ export function RolesPage() {
       )}
 
       {/* Modal */}
-      <Modal 
-        opened={opened} 
-        onClose={close} 
+      <Modal
+        opened={opened}
+        onClose={close}
         title={editingRole ? `Editar: ${editingRole.name}` : 'Nuevo rol'}
         size="lg"
       >
@@ -314,11 +334,20 @@ export function RolesPage() {
               {...form.getInputProps('description')}
             />
 
-            <Divider label="Permisos" labelPosition="center" />
+            <Divider>
+              <Group gap={4}>
+                <Text size="sm" fw={500}>Permisos</Text>
+                <InfoTooltip
+                  label="Selecciona los permisos específicos que los usuarios con este rol podrán ejecutar. Cada permiso controla el acceso a una funcionalidad o sección de la plataforma."
+                  multiline
+                  maxWidth={280}
+                />
+              </Group>
+            </Divider>
 
-            <Box 
-              style={{ 
-                maxHeight: 400, 
+            <Box
+              style={{
+                maxHeight: 400,
                 overflow: 'auto',
                 border: '1px solid #e5e5e5',
                 borderRadius: 8,
@@ -361,11 +390,11 @@ export function RolesPage() {
       {/* Wireframe annotation */}
       <Alert variant="light" color="yellow" title="AC: S1-04.1, S1-04.2, S1-04.3" icon={<IconAlertCircle size={16} />}>
         <Text size="xs">
-          • Lista de permisos versionada (ids estables)<br/>
-          • Crear rol con nombre único + seleccionar permisos (checkbox)<br/>
-          • Editar rol y permisos<br/>
-          • No se puede eliminar el rol protegido Owner/Admin<br/>
-          • No se permite dejar la org sin ningún rol con permiso de administración (guardrail)<br/>
+          • Lista de permisos versionada (ids estables)<br />
+          • Crear rol con nombre único + seleccionar permisos (checkbox)<br />
+          • Editar rol y permisos<br />
+          • No se puede eliminar el rol protegido Owner/Admin<br />
+          • No se permite dejar la org sin ningún rol con permiso de administración (guardrail)<br />
           • Auditoría de cambios
         </Text>
       </Alert>

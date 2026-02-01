@@ -19,7 +19,8 @@ import {
   Avatar,
   Divider,
   Center,
-  ThemeIcon
+  ThemeIcon,
+  Tooltip
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { useForm } from '@mantine/form'
@@ -39,6 +40,7 @@ import {
   IconUsers,
   IconInfoCircle
 } from '@tabler/icons-react'
+import { InfoTooltip } from '../../components/InfoTooltip'
 
 interface User {
   id: string
@@ -162,7 +164,7 @@ export function UsersPage() {
   })
 
   const toggleStatus = (id: string, newStatus: 'ACTIVE' | 'SUSPENDED') => {
-    setUsers(users => users.map(u => 
+    setUsers(users => users.map(u =>
       u.id === id ? { ...u, status: newStatus } : u
     ))
   }
@@ -190,8 +192,8 @@ export function UsersPage() {
           <Text c="dimmed">Administra los usuarios de tu organización</Text>
         </Box>
         <Group>
-          <Button 
-            variant="light" 
+          <Button
+            variant="light"
             leftSection={<IconUpload size={16} />}
             component={Link}
             to="/admin/users/bulk-import"
@@ -254,8 +256,26 @@ export function UsersPage() {
                 <Table.Th>Cargo</Table.Th>
                 <Table.Th>Rol</Table.Th>
                 <Table.Th>Filial / Área</Table.Th>
-                <Table.Th>Alcance</Table.Th>
-                <Table.Th>Estado</Table.Th>
+                <Table.Th>
+                  <Group gap={4}>
+                    Alcance
+                    <InfoTooltip
+                      label="El alcance define qué datos puede visualizar cada usuario según su rol y área asignada"
+                      multiline
+                      maxWidth={200}
+                    />
+                  </Group>
+                </Table.Th>
+                <Table.Th>
+                  <Group gap={4}>
+                    Estado
+                    <Tooltip label="Invitado: usuario pendiente de activación | Activo: usuario con acceso completo | Suspendido: acceso temporalmente deshabilitado" multiline w={250} withArrow>
+                      <ActionIcon variant="subtle" color="gray" size="xs" style={{ cursor: 'help' }}>
+                        <IconInfoCircle size={14} />
+                      </ActionIcon>
+                    </Tooltip>
+                  </Group>
+                </Table.Th>
                 <Table.Th w={100}>Acciones</Table.Th>
               </Table.Tr>
             </Table.Thead>
@@ -269,7 +289,7 @@ export function UsersPage() {
                       </Avatar>
                       <Box>
                         <Text size="sm" fw={500}>
-                          {user.firstName && user.lastName 
+                          {user.firstName && user.lastName
                             ? `${user.firstName} ${user.lastName}`
                             : '(Sin completar)'}
                         </Text>
@@ -300,36 +320,40 @@ export function UsersPage() {
                   <Table.Td>
                     <Group gap={4}>
                       {user.status === 'ACTIVE' && (
-                        <ActionIcon 
-                          variant="subtle" 
-                          color="red" 
-                          size="sm"
-                          onClick={() => toggleStatus(user.id, 'SUSPENDED')}
-                          title="Suspender usuario"
-                        >
-                          <IconPlayerPause size={16} />
-                        </ActionIcon>
+                        <Tooltip label="Suspender usuario" withArrow position="left">
+                          <ActionIcon
+                            variant="subtle"
+                            color="red"
+                            size="sm"
+                            onClick={() => toggleStatus(user.id, 'SUSPENDED')}
+                          >
+                            <IconPlayerPause size={16} />
+                          </ActionIcon>
+                        </Tooltip>
                       )}
                       {user.status === 'SUSPENDED' && (
-                        <ActionIcon 
-                          variant="subtle" 
-                          color="green" 
-                          size="sm"
-                          onClick={() => toggleStatus(user.id, 'ACTIVE')}
-                          title="Reactivar usuario"
-                        >
-                          <IconPlayerPlay size={16} />
-                        </ActionIcon>
+                        <Tooltip label="Reactivar usuario" withArrow position="left">
+                          <ActionIcon
+                            variant="subtle"
+                            color="green"
+                            size="sm"
+                            onClick={() => toggleStatus(user.id, 'ACTIVE')}
+                          >
+                            <IconPlayerPlay size={16} />
+                          </ActionIcon>
+                        </Tooltip>
                       )}
-                      
+
                       <Menu shadow="md" width={200}>
                         <Menu.Target>
-                          <ActionIcon variant="subtle" color="gray">
-                            <IconDotsVertical size={16} />
-                          </ActionIcon>
+                          <Tooltip label="Más opciones" withArrow position="left">
+                            <ActionIcon variant="subtle" color="gray">
+                              <IconDotsVertical size={16} />
+                            </ActionIcon>
+                          </Tooltip>
                         </Menu.Target>
                         <Menu.Dropdown>
-                          <Menu.Item 
+                          <Menu.Item
                             leftSection={<IconEdit size={14} />}
                             onClick={() => handleOpenEdit(user)}
                           >
@@ -355,33 +379,33 @@ export function UsersPage() {
           </Table>
         ) : (
           <Center p="xl" style={{ flexDirection: 'column', gap: 16 }}>
-             <ThemeIcon size={64} radius="xl" color="gray" variant="light">
-               <IconUsers size={32} />
-             </ThemeIcon>
-             <Stack gap={4} align="center">
-               <Text fw={500}>No se encontraron usuarios</Text>
-               <Text size="sm" c="dimmed">
-                 {search || statusFilter ? 'Prueba cambiando los filtros de búsqueda.' : 'Comienza invitando a tu primer usuario o importándolos masivamente.'}
-               </Text>
-             </Stack>
-             {!search && !statusFilter && (
-               <Group>
-                 <Button leftSection={<IconPlus size={16} />} onClick={handleOpenNew}>
-                   Invitar usuario
-                 </Button>
-                 <Button variant="light" leftSection={<IconUpload size={16} />} component={Link} to="/admin/users/bulk-import">
-                   Carga masiva
-                 </Button>
-               </Group>
-             )}
+            <ThemeIcon size={64} radius="xl" color="gray" variant="light">
+              <IconUsers size={32} />
+            </ThemeIcon>
+            <Stack gap={4} align="center">
+              <Text fw={500}>No se encontraron usuarios</Text>
+              <Text size="sm" c="dimmed">
+                {search || statusFilter ? 'Prueba cambiando los filtros de búsqueda.' : 'Comienza invitando a tu primer usuario o importándolos masivamente.'}
+              </Text>
+            </Stack>
+            {!search && !statusFilter && (
+              <Group>
+                <Button leftSection={<IconPlus size={16} />} onClick={handleOpenNew}>
+                  Invitar usuario
+                </Button>
+                <Button variant="light" leftSection={<IconUpload size={16} />} component={Link} to="/admin/users/bulk-import">
+                  Carga masiva
+                </Button>
+              </Group>
+            )}
           </Center>
         )}
       </Paper>
 
       {/* Modal */}
-      <Modal 
-        opened={opened} 
-        onClose={close} 
+      <Modal
+        opened={opened}
+        onClose={close}
         title={editingUser ? 'Editar usuario' : 'Invitar usuario'}
         size="lg"
       >
@@ -418,15 +442,25 @@ export function UsersPage() {
             <Divider label="Accesos" labelPosition="center" />
 
             <Stack gap="xs">
-              <Select
-                label="Rol"
-                placeholder="Seleccionar rol"
-                data={roles}
-                withAsterisk
-                {...form.getInputProps('role')}
-              />
+              <Group gap="xs" align="center">
+                <Select
+                  label="Rol"
+                  placeholder="Seleccionar rol"
+                  data={roles}
+                  withAsterisk
+                  style={{ flex: 1 }}
+                  {...form.getInputProps('role')}
+                />
+                <Box mt={24}>
+                  <InfoTooltip
+                    label="El rol determina los permisos y funcionalidades a las que el usuario tendrá acceso en la plataforma. Owner/Admin tiene acceso completo, mientras que otros roles tienen permisos específicos."
+                    multiline
+                    maxWidth={280}
+                  />
+                </Box>
+              </Group>
               {selectedRole && (
-                <Alert variant="light" color="blue" icon={<IconInfoCircle size={14}/>} py="xs">
+                <Alert variant="light" color="blue" icon={<IconInfoCircle size={14} />} py="xs">
                   <Text size="xs">{selectedRole.description}</Text>
                 </Alert>
               )}
@@ -449,12 +483,22 @@ export function UsersPage() {
               />
             </Group>
 
-            <Select
-              label="Alcance de visualización"
-              description="Define qué datos puede ver este usuario"
-              data={scopeModes.map(s => ({ value: s.value, label: `${s.label} - ${s.description}` }))}
-              {...form.getInputProps('scopeMode')}
-            />
+            <Group gap="xs" align="flex-start">
+              <Select
+                label="Alcance de visualización"
+                description="Define qué datos puede ver este usuario"
+                data={scopeModes.map(s => ({ value: s.value, label: `${s.label} - ${s.description}` }))}
+                style={{ flex: 1 }}
+                {...form.getInputProps('scopeMode')}
+              />
+              <Box mt={24}>
+                <InfoTooltip
+                  label="El alcance de visualización controla qué información del sistema puede ver el usuario. Por ejemplo, 'Solo mi área' limita la visualización a datos de su área asignada, mientras que 'Toda la organización' permite ver todos los datos."
+                  multiline
+                  maxWidth={300}
+                />
+              </Box>
+            </Group>
 
             <Group justify="flex-end" mt="md">
               <Button variant="light" onClick={close}>Cancelar</Button>
@@ -469,11 +513,11 @@ export function UsersPage() {
       {/* Wireframe annotation */}
       <Alert variant="light" color="yellow" title="AC: S1-05.1 a S1-05.5" icon={<IconAlertCircle size={16} />}>
         <Text size="xs">
-          • Lista muestra: nombre, email, cargo, rol, filial primaria, área principal, alcance, estado<br/>
-          • Filtro por estado y búsqueda por email/nombre<br/>
-          • Crear usuario Invited con rol + filial + área obligatorios<br/>
-          • Reenviar genera token nuevo / Revocar invalida token<br/>
-          • Suspender/reactivar usuarios sin perder historial<br/>
+          • Lista muestra: nombre, email, cargo, rol, filial primaria, área principal, alcance, estado<br />
+          • Filtro por estado y búsqueda por email/nombre<br />
+          • Crear usuario Invited con rol + filial + área obligatorios<br />
+          • Reenviar genera token nuevo / Revocar invalida token<br />
+          • Suspender/reactivar usuarios sin perder historial<br />
           • Alcance: mi área / mi rama / áreas específicas / toda filial / filiales seleccionadas / toda org
         </Text>
       </Alert>

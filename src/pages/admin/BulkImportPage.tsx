@@ -31,6 +31,7 @@ import {
   IconMail,
   IconAlertTriangle
 } from '@tabler/icons-react'
+import { InfoTooltip } from '../../components/InfoTooltip'
 
 interface ImportRow {
   row: number
@@ -73,7 +74,7 @@ export function BulkImportPage() {
   const handleUpload = async (files: File[]) => {
     const uploadedFile = files[0]
     setFile(uploadedFile)
-    
+
     // Simular validación
     setProcessing(true)
     await new Promise(resolve => setTimeout(resolve, 1500))
@@ -101,17 +102,24 @@ export function BulkImportPage() {
       <Group justify="space-between">
         <Box>
           <Group gap="xs" mb={4}>
-            <Button 
-              variant="subtle" 
-              size="compact-sm" 
-              component={Link} 
+            <Button
+              variant="subtle"
+              size="compact-sm"
+              component={Link}
               to="/admin/users"
               leftSection={<IconArrowLeft size={14} />}
             >
               Volver a usuarios
             </Button>
           </Group>
-          <Title order={2}>Carga masiva de usuarios</Title>
+          <Group gap={4}>
+            <Title order={2}>Carga masiva de usuarios</Title>
+            <InfoTooltip
+              label="La carga masiva permite crear múltiples usuarios a la vez desde un archivo CSV o Excel. El sistema validará los datos antes de crear los usuarios."
+              multiline
+              maxWidth={280}
+            />
+          </Group>
           <Text c="dimmed">Importa múltiples usuarios desde un archivo CSV o Excel</Text>
         </Box>
       </Group>
@@ -122,8 +130,8 @@ export function BulkImportPage() {
           <Paper withBorder p="xl" mt="md">
             <Stack gap="md">
               {/* Download template */}
-              <Alert 
-                icon={<IconFileSpreadsheet size={16} />} 
+              <Alert
+                icon={<IconFileSpreadsheet size={16} />}
                 title="Plantilla"
                 color="blue"
                 variant="light"
@@ -132,8 +140,8 @@ export function BulkImportPage() {
                   <Text size="sm">
                     Descarga la plantilla con el formato correcto (incluye filial y área).
                   </Text>
-                  <Button 
-                    variant="light" 
+                  <Button
+                    variant="light"
                     size="xs"
                     leftSection={<IconDownload size={14} />}
                     onClick={downloadTemplate}
@@ -174,7 +182,14 @@ export function BulkImportPage() {
 
               {/* Expected columns */}
               <Box>
-                <Text size="sm" fw={500} mb="xs">Columnas esperadas:</Text>
+                <Group gap={4} mb="xs">
+                  <Text size="sm" fw={500}>Columnas esperadas:</Text>
+                  <InfoTooltip
+                    label="Estas son las columnas requeridas en tu archivo. Descarga la plantilla para ver el formato exacto y ejemplos de cada columna."
+                    multiline
+                    maxWidth={250}
+                  />
+                </Group>
                 <Group gap="xs">
                   {['email', 'nombre', 'apellido', 'cargo', 'rol', 'filial', 'area', 'alcance'].map(col => (
                     <Badge key={col} variant="light" color="gray">{col}</Badge>
@@ -191,7 +206,14 @@ export function BulkImportPage() {
               {/* Summary */}
               <Group justify="space-between">
                 <Box>
-                  <Text fw={500}>Resultados de validación</Text>
+                  <Group gap={4}>
+                    <Text fw={500}>Resultados de validación</Text>
+                    <InfoTooltip
+                      label="El sistema ha verificado cada fila del archivo. Las filas válidas se importarán, las inválidas requieren corrección antes de procesar."
+                      multiline
+                      maxWidth={260}
+                    />
+                  </Group>
                   <Text size="sm" c="dimmed">Archivo: {file?.name}</Text>
                 </Box>
                 <Group>
@@ -253,9 +275,9 @@ export function BulkImportPage() {
                           </Stack>
                         </Table.Td>
                         <Table.Td>
-                          <Badge 
-                            color={row.status === 'VALID' ? 'green' : 'red'} 
-                            variant="light" 
+                          <Badge
+                            color={row.status === 'VALID' ? 'green' : 'red'}
+                            variant="light"
                             size="sm"
                           >
                             {row.status === 'VALID' ? 'Válido' : 'Error'}
@@ -293,7 +315,7 @@ export function BulkImportPage() {
                 <Button variant="light" onClick={() => setActive(0)}>
                   Subir otro archivo
                 </Button>
-                <Button 
+                <Button
                   onClick={openSendModal}
                   disabled={validCount === 0}
                 >
@@ -316,13 +338,13 @@ export function BulkImportPage() {
               </ThemeIcon>
               <Title order={3}>¡Importación completada!</Title>
               <Text c="dimmed" ta="center">
-                Se crearon {validCount} usuarios correctamente.<br/>
+                Se crearon {validCount} usuarios correctamente.<br />
                 Las invitaciones han sido enviadas.
               </Text>
               <Group>
-                <Button 
-                  variant="light" 
-                  component={Link} 
+                <Button
+                  variant="light"
+                  component={Link}
                   to="/admin/users"
                 >
                   Ver usuarios
@@ -351,7 +373,7 @@ export function BulkImportPage() {
           <Alert icon={<IconMail size={16} />} color="blue" variant="light">
             Se crearán {validCount} usuarios con estado <Badge size="xs">INVITED</Badge>
           </Alert>
-          
+
           <Text size="sm">
             ¿Deseas enviar las invitaciones por correo electrónico ahora?
           </Text>
@@ -365,7 +387,7 @@ export function BulkImportPage() {
             <Button variant="light" onClick={() => handleProcess(false)}>
               No, solo crear
             </Button>
-            <Button 
+            <Button
               leftSection={<IconMail size={16} />}
               onClick={() => handleProcess(true)}
               loading={processing}
@@ -379,12 +401,12 @@ export function BulkImportPage() {
       {/* Wireframe annotation */}
       <Alert variant="light" color="yellow" title="AC: S1-05.7, S1-05.8" icon={<IconAlertCircle size={16} />}>
         <Text size="xs">
-          • Subida CSV/Excel con columnas: email, nombre, cargo, rol, filial, área principal, alcance<br/>
-          • Prevalidación verifica existencia de filial y coherencia área↔filial<br/>
-          • Previsualización: válidos vs inválidos y errores por fila<br/>
-          • No crea usuarios hasta confirmar<br/>
-          • Pop-up: "¿Enviar invitación a todos?" Sí/No<br/>
-          • Si Sí → envía invitación en lote, reporta N ok / M fallas<br/>
+          • Subida CSV/Excel con columnas: email, nombre, cargo, rol, filial, área principal, alcance<br />
+          • Prevalidación verifica existencia de filial y coherencia área↔filial<br />
+          • Previsualización: válidos vs inválidos y errores por fila<br />
+          • No crea usuarios hasta confirmar<br />
+          • Pop-up: "¿Enviar invitación a todos?" Sí/No<br />
+          • Si Sí → envía invitación en lote, reporta N ok / M fallas<br />
           • Si No → usuarios quedan Invited y el admin puede enviar después
         </Text>
       </Alert>

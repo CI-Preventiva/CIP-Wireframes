@@ -16,7 +16,8 @@ import {
   Alert,
   Box,
   ThemeIcon,
-  Center
+  Center,
+  Tooltip
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { useForm } from '@mantine/form'
@@ -32,6 +33,7 @@ import {
   IconFolder,
   IconFolderOpen
 } from '@tabler/icons-react'
+import { InfoTooltip } from '../../components/InfoTooltip'
 
 interface Area {
   id: string
@@ -171,18 +173,18 @@ export function AreasPage() {
   const renderAreaTree = (areas: Area[], level = 0) => {
     return areas.map(area => (
       <Box key={area.id}>
-        <Paper 
-          withBorder 
-          p="sm" 
+        <Paper
+          withBorder
+          p="sm"
           mb="xs"
           radius="md"
           bg={level === 0 ? 'white' : 'gray.0'}
         >
           <Group justify="space-between">
             <Group gap="sm">
-              <ThemeIcon 
-                size="sm" 
-                variant="light" 
+              <ThemeIcon
+                size="sm"
+                variant="light"
                 color={area.children?.length ? 'dark' : 'gray'}
               >
                 {area.children?.length ? <IconFolderOpen size={14} /> : <IconFolder size={14} />}
@@ -200,34 +202,36 @@ export function AreasPage() {
               </Box>
             </Group>
             <Group gap="xs">
-              <Badge 
-                size="xs" 
-                variant="light" 
+              <Badge
+                size="xs"
+                variant="light"
                 color={area.status === 'ACTIVE' ? 'green' : 'red'}
               >
                 {area.status === 'ACTIVE' ? 'Activa' : 'Inactiva'}
               </Badge>
               <Menu shadow="md" width={180}>
                 <Menu.Target>
-                  <ActionIcon variant="subtle" color="gray" size="sm">
-                    <IconDotsVertical size={14} />
-                  </ActionIcon>
+                  <Tooltip label="Más opciones" withArrow position="left">
+                    <ActionIcon variant="subtle" color="gray" size="sm">
+                      <IconDotsVertical size={14} />
+                    </ActionIcon>
+                  </Tooltip>
                 </Menu.Target>
                 <Menu.Dropdown>
-                  <Menu.Item 
+                  <Menu.Item
                     leftSection={<IconPlus size={14} />}
                     onClick={() => handleOpenNew(area.id)}
                   >
                     Agregar sub-área
                   </Menu.Item>
-                  <Menu.Item 
+                  <Menu.Item
                     leftSection={<IconEdit size={14} />}
                     onClick={() => handleOpenEdit(area)}
                   >
                     Editar
                   </Menu.Item>
                   <Menu.Divider />
-                  <Menu.Item 
+                  <Menu.Item
                     leftSection={<IconTrash size={14} />}
                     color="red"
                   >
@@ -252,7 +256,14 @@ export function AreasPage() {
       {/* Header */}
       <Group justify="space-between">
         <Box>
-          <Title order={2}>Áreas</Title>
+          <Group gap={4}>
+            <Title order={2}>Áreas</Title>
+            <InfoTooltip
+              label="Las áreas representan la estructura organizacional jerárquica de tu empresa. Puedes crear áreas y sub-áreas para reflejar tu organigrama real."
+              multiline
+              maxWidth={280}
+            />
+          </Group>
           <Text c="dimmed">Gestiona la estructura organizacional jerárquica</Text>
         </Box>
         <Button leftSection={<IconPlus size={16} />} onClick={() => handleOpenNew()}>
@@ -287,7 +298,7 @@ export function AreasPage() {
           <IconSitemap size={18} />
           <Text fw={500}>Organigrama: {subsidiaries.find(s => s.value === selectedSubsidiary)?.label}</Text>
         </Group>
-        
+
         {currentAreas.length > 0 ? (
           renderAreaTree(currentAreas)
         ) : (
@@ -301,8 +312,8 @@ export function AreasPage() {
                 Comienza creando el área raíz (ej. Dirección General) para esta filial.
               </Text>
             </Stack>
-            <Button 
-              mt="md" 
+            <Button
+              mt="md"
               leftSection={<IconPlus size={16} />}
               onClick={() => handleOpenNew()}
             >
@@ -313,9 +324,9 @@ export function AreasPage() {
       </Paper>
 
       {/* Modal */}
-      <Modal 
-        opened={opened} 
-        onClose={close} 
+      <Modal
+        opened={opened}
+        onClose={close}
         title={editingArea ? 'Editar área' : 'Nueva área'}
         size="md"
       >
@@ -327,12 +338,22 @@ export function AreasPage() {
               withAsterisk
               {...form.getInputProps('name')}
             />
-            <TextInput
-              label="Código (opcional)"
-              placeholder="Ej: RRHH"
-              description="Identificador corto del área"
-              {...form.getInputProps('code')}
-            />
+            <Group gap="xs" align="flex-start">
+              <TextInput
+                label="Código (opcional)"
+                placeholder="Ej: RRHH"
+                description="Identificador corto del área"
+                style={{ flex: 1 }}
+                {...form.getInputProps('code')}
+              />
+              <Box mt={24}>
+                <InfoTooltip
+                  label="El código es un identificador corto y único para el área, útil para reportes y referencias rápidas (ej: RRHH, OPS, FIN)."
+                  multiline
+                  maxWidth={220}
+                />
+              </Box>
+            </Group>
             <Textarea
               label="Descripción (opcional)"
               placeholder="Descripción del área..."
@@ -344,14 +365,26 @@ export function AreasPage() {
               data={areaTypes}
               {...form.getInputProps('areaType')}
             />
-            <Select
-              label="Área padre (opcional)"
-              placeholder="Sin área padre (raíz)"
-              data={parentOptions}
-              clearable
-              description="Debe pertenecer a la misma filial"
-              {...form.getInputProps('parentId')}
-            />
+            <Stack gap="xs">
+              <Group gap="xs" align="flex-start">
+                <Select
+                  label="Área padre (opcional)"
+                  placeholder="Sin área padre (raíz)"
+                  data={parentOptions}
+                  clearable
+                  description="Debe pertenecer a la misma filial"
+                  style={{ flex: 1 }}
+                  {...form.getInputProps('parentId')}
+                />
+                <Box mt={24}>
+                  <InfoTooltip
+                    label="El área padre permite crear jerarquías. Por ejemplo, 'Producción' puede ser área padre de 'Línea A' y 'Línea B'. Las áreas sin padre son áreas raíz."
+                    multiline
+                    maxWidth={280}
+                  />
+                </Box>
+              </Group>
+            </Stack>
             <Group justify="flex-end" mt="md">
               <Button variant="light" onClick={close}>Cancelar</Button>
               <Button type="submit">{editingArea ? 'Guardar' : 'Crear'}</Button>
@@ -363,11 +396,11 @@ export function AreasPage() {
       {/* Wireframe annotation */}
       <Alert variant="light" color="yellow" title="AC: S1-03.1" icon={<IconAlertCircle size={16} />}>
         <Text size="xs">
-          • Crear área con nombre obligatorio y opcional: código/descr<br/>
-          • Definir parent_area_id para jerarquía<br/>
-          • Validaciones: evitar ciclos, evitar duplicados por mismo padre<br/>
-          • Desactivar área sin borrar historial<br/>
-          • parent_area_id debe ser de la misma filial<br/>
+          • Crear área con nombre obligatorio y opcional: código/descr<br />
+          • Definir parent_area_id para jerarquía<br />
+          • Validaciones: evitar ciclos, evitar duplicados por mismo padre<br />
+          • Desactivar área sin borrar historial<br />
+          • parent_area_id debe ser de la misma filial<br />
           • Listado/árbol se filtra por filial
         </Text>
       </Alert>
