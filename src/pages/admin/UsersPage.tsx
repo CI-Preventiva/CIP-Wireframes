@@ -21,7 +21,8 @@ import {
   Center,
   ThemeIcon,
   Tooltip,
-  SegmentedControl
+  SegmentedControl,
+  Checkbox
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { useForm } from '@mantine/form'
@@ -41,7 +42,9 @@ import {
   IconUsers,
   IconInfoCircle,
   IconHierarchy,
-  IconList
+  IconList,
+  IconPhone,
+  IconUser
 } from '@tabler/icons-react'
 import { InfoTooltip } from '../../components/InfoTooltip'
 import { OrganizationTree } from '../../components/OrganizationTree'
@@ -51,20 +54,88 @@ interface User {
   email: string
   firstName?: string
   lastName?: string
-  jobTitle?: string
+  phone?: string
+  avatarUrl?: string
   role: string
-  subsidiary: string
-  primaryArea: string
-  scopeMode: string
-  status: 'INVITED' | 'ACTIVE' | 'SUSPENDED'
+  position?: string
+  positionId?: string
+  employeeId?: string
+  organizationalUnitId: string
+  organizationalUnitPath: string // "División > Gerencia > Departamento"
+  supervisorId?: string
+  supervisorName?: string
+  status: 'INVITED' | 'ACTIVE' | 'INACTIVE'
 }
 
 const mockUsers: User[] = [
-  { id: '1', email: 'juan.diaz@acme.com', firstName: 'Juan', lastName: 'Díaz', jobTitle: 'Gerente General', role: 'Owner/Admin', subsidiary: 'Sede Principal', primaryArea: 'Dirección General', scopeMode: 'ORG_ALL', status: 'ACTIVE' },
-  { id: '2', email: 'maria.lopez@acme.com', firstName: 'María', lastName: 'López', jobTitle: 'Jefe RRHH', role: 'Supervisor', subsidiary: 'Sede Principal', primaryArea: 'Recursos Humanos', scopeMode: 'PRIMARY_BRANCH', status: 'ACTIVE' },
-  { id: '3', email: 'carlos.ruiz@acme.com', firstName: 'Carlos', lastName: 'Ruiz', jobTitle: 'Operador', role: 'Trabajador', subsidiary: 'Planta Norte', primaryArea: 'Producción', scopeMode: 'PRIMARY_AREA_ONLY', status: 'ACTIVE' },
-  { id: '4', email: 'ana.martinez@acme.com', firstName: '', lastName: '', jobTitle: '', role: 'Trabajador', subsidiary: 'Sede Principal', primaryArea: 'Logística', scopeMode: 'PRIMARY_AREA_ONLY', status: 'INVITED' },
-  { id: '5', email: 'pedro.sanchez@acme.com', firstName: 'Pedro', lastName: 'Sánchez', jobTitle: 'Supervisor SSO', role: 'Supervisor', subsidiary: 'Planta Norte', primaryArea: 'Control de Calidad', scopeMode: 'SUBSIDIARY_ALL', status: 'SUSPENDED' },
+  { 
+    id: '1', 
+    email: 'juan.diaz@acme.com', 
+    firstName: 'Juan', 
+    lastName: 'Díaz', 
+    phone: '+56912345678',
+    employeeId: 'EMP001',
+    role: 'Owner/Admin', 
+    position: 'Gerente General',
+    organizationalUnitId: 'div-1',
+    organizationalUnitPath: 'Dirección de Operaciones',
+    status: 'ACTIVE' 
+  },
+  { 
+    id: '2', 
+    email: 'maria.lopez@acme.com', 
+    firstName: 'María', 
+    lastName: 'López', 
+    phone: '+56987654321',
+    employeeId: 'EMP002',
+    role: 'Supervisor', 
+    position: 'Jefa de RRHH',
+    organizationalUnitId: 'ger-3',
+    organizationalUnitPath: 'Administración > G. RRHH',
+    supervisorId: '1',
+    supervisorName: 'Juan Díaz',
+    status: 'ACTIVE' 
+  },
+  { 
+    id: '3', 
+    email: 'carlos.ruiz@acme.com', 
+    firstName: 'Carlos', 
+    lastName: 'Ruiz', 
+    phone: '+56911111111',
+    employeeId: 'EMP003',
+    role: 'Trabajador', 
+    position: 'Operador Línea A',
+    organizationalUnitId: 'dep-1',
+    organizationalUnitPath: 'Operaciones > G. Producción > Línea A',
+    supervisorId: '2',
+    supervisorName: 'María López',
+    status: 'ACTIVE' 
+  },
+  { 
+    id: '4', 
+    email: 'ana.martinez@acme.com', 
+    firstName: '', 
+    lastName: '', 
+    role: 'Trabajador', 
+    organizationalUnitId: 'dep-2',
+    organizationalUnitPath: 'Operaciones > G. Producción > Línea B',
+    status: 'INVITED' 
+  },
+  { 
+    id: '5', 
+    email: 'pedro.sanchez@acme.com', 
+    firstName: 'Pedro', 
+    lastName: 'Sánchez', 
+    phone: '+56922222222',
+    employeeId: 'EMP005',
+    role: 'Supervisor', 
+    position: 'Supervisor SSO',
+    organizationalUnitId: 'dep-3',
+    organizationalUnitPath: 'Operaciones > G. Mantenimiento > Preventivo',
+    supervisorId: '1',
+    supervisorName: 'Juan Díaz',
+    status: 'INACTIVE' 
+  },
 ]
 
 const roles = [
@@ -74,44 +145,46 @@ const roles = [
   { value: 'auditor', label: 'Auditor', description: 'Solo lectura de registros' },
 ]
 
-const subsidiaries = [
-  { value: '1', label: 'Sede Principal' },
-  { value: '2', label: 'Planta Norte' },
+// Unidades organizacionales disponibles (vendrían del sistema)
+const organizationalUnits = [
+  { value: 'div-1', label: 'Dirección de Operaciones', level: 1 },
+  { value: 'div-2', label: 'Dirección de Administración', level: 1 },
+  { value: 'ger-1', label: 'Operaciones > G. Producción', level: 2 },
+  { value: 'ger-2', label: 'Operaciones > G. Mantenimiento', level: 2 },
+  { value: 'ger-3', label: 'Administración > G. RRHH', level: 2 },
+  { value: 'dep-1', label: 'Operaciones > G. Producción > Línea A', level: 3 },
+  { value: 'dep-2', label: 'Operaciones > G. Producción > Línea B', level: 3 },
+  { value: 'dep-3', label: 'Operaciones > G. Mantenimiento > Preventivo', level: 3 },
 ]
 
-const areas = [
-  { value: 'a1', label: 'Dirección General', group: 'Sede Principal' },
-  { value: 'a2', label: 'Recursos Humanos', group: 'Sede Principal' },
-  { value: 'a3', label: 'Operaciones', group: 'Sede Principal' },
-  { value: 'b1', label: 'Gerencia Planta', group: 'Planta Norte' },
-  { value: 'b2', label: 'Producción', group: 'Planta Norte' },
-]
-
-const scopeModes = [
-  { value: 'PRIMARY_AREA_ONLY', label: 'Solo mi área', description: 'Ve datos solo de su área principal' },
-  { value: 'PRIMARY_BRANCH', label: 'Mi rama', description: 'Ve datos de su área y sub-áreas' },
-  { value: 'AREAS_SELECTED', label: 'Áreas específicas', description: 'Ve datos de áreas seleccionadas' },
-  { value: 'SUBSIDIARY_ALL', label: 'Toda la filial', description: 'Ve datos de toda su filial primaria' },
-  { value: 'SUBSIDIARIES_SELECTED', label: 'Filiales seleccionadas', description: 'Ve datos de filiales específicas' },
-  { value: 'ORG_ALL', label: 'Toda la organización', description: 'Ve datos de toda la organización' },
+const positions = [
+  { value: 'p1', label: 'Gerente General' },
+  { value: 'p2', label: 'Jefe de Área' },
+  { value: 'p3', label: 'Supervisor' },
+  { value: 'p4', label: 'Analista' },
+  { value: 'p5', label: 'Operador' },
+  { value: 'p6', label: 'Técnico' },
 ]
 
 const statusColors: Record<string, string> = {
   ACTIVE: 'green',
   INVITED: 'blue',
-  SUSPENDED: 'red'
+  INACTIVE: 'red'
 }
 
 const statusLabels: Record<string, string> = {
   ACTIVE: 'Activo',
   INVITED: 'Invitado',
-  SUSPENDED: 'Suspendido'
+  INACTIVE: 'Inactivo'
 }
 
 export function UsersPage() {
   const [users, setUsers] = useState(mockUsers)
   const [opened, { open, close }] = useDisclosure(false)
+  const [deactivateModal, { open: openDeactivate, close: closeDeactivate }] = useDisclosure(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null)
+  const [cascadeDeactivate, setCascadeDeactivate] = useState(false)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'list' | 'tree'>('list')
@@ -121,11 +194,12 @@ export function UsersPage() {
       email: '',
       firstName: '',
       lastName: '',
-      jobTitle: '',
+      phone: '',
       role: '',
-      subsidiary: '',
-      primaryArea: '',
-      scopeMode: 'PRIMARY_AREA_ONLY'
+      positionId: '',
+      organizationalUnitId: '',
+      supervisorId: '',
+      employeeId: ''
     },
     validate: {
       email: (value) => {
@@ -133,14 +207,29 @@ export function UsersPage() {
         if (!/^\S+@\S+$/.test(value)) return 'Email inválido'
         return null
       },
+      phone: (value) => {
+        if (!value) return 'Teléfono requerido'
+        return null
+      },
       role: (value) => (!value ? 'Rol requerido' : null),
-      subsidiary: (value) => (!value ? 'Filial requerida' : null),
-      primaryArea: (value) => (!value ? 'Área requerida' : null)
+      organizationalUnitId: (value) => (!value ? 'Unidad organizacional requerida' : null)
     }
   })
 
-  // Obtener descripción del rol seleccionado para el tooltip/info
   const selectedRole = roles.find(r => r.value === form.values.role)
+
+  // Supervisores disponibles (usuarios activos)
+  const availableSupervisors = users
+    .filter(u => u.status === 'ACTIVE' && u.id !== editingUser?.id)
+    .map(u => ({
+      value: u.id,
+      label: `${u.firstName} ${u.lastName} (${u.position || u.role})`
+    }))
+
+  // Subordinados del usuario a desactivar
+  const getSubordinates = (userId: string) => {
+    return users.filter(u => u.supervisorId === userId && u.status === 'ACTIVE')
+  }
 
   const handleOpenNew = () => {
     setEditingUser(null)
@@ -154,11 +243,12 @@ export function UsersPage() {
       email: user.email,
       firstName: user.firstName || '',
       lastName: user.lastName || '',
-      jobTitle: user.jobTitle || '',
+      phone: user.phone || '',
       role: user.role,
-      subsidiary: user.subsidiary,
-      primaryArea: user.primaryArea,
-      scopeMode: user.scopeMode
+      positionId: user.positionId || '',
+      organizationalUnitId: user.organizationalUnitId,
+      supervisorId: user.supervisorId || '',
+      employeeId: user.employeeId || ''
     })
     open()
   }
@@ -168,9 +258,32 @@ export function UsersPage() {
     form.reset()
   })
 
-  const toggleStatus = (id: string, newStatus: 'ACTIVE' | 'SUSPENDED') => {
+  const handleDeactivateClick = (user: User) => {
+    setUserToDeactivate(user)
+    setCascadeDeactivate(false)
+    openDeactivate()
+  }
+
+  const handleConfirmDeactivate = () => {
+    if (userToDeactivate) {
+      setUsers(users => users.map(u =>
+        u.id === userToDeactivate.id ? { ...u, status: 'INACTIVE' as const } : u
+      ))
+      // Si cascade, desactivar subordinados también
+      if (cascadeDeactivate) {
+        const subordinates = getSubordinates(userToDeactivate.id)
+        setUsers(users => users.map(u =>
+          subordinates.find(s => s.id === u.id) ? { ...u, status: 'INACTIVE' as const } : u
+        ))
+      }
+    }
+    closeDeactivate()
+    setUserToDeactivate(null)
+  }
+
+  const reactivateUser = (id: string) => {
     setUsers(users => users.map(u =>
-      u.id === id ? { ...u, status: newStatus } : u
+      u.id === id ? { ...u, status: 'ACTIVE' as const } : u
     ))
   }
 
@@ -227,7 +340,7 @@ export function UsersPage() {
             data={[
               { value: 'ACTIVE', label: 'Activos' },
               { value: 'INVITED', label: 'Invitados' },
-              { value: 'SUSPENDED', label: 'Suspendidos' },
+              { value: 'INACTIVE', label: 'Inactivos' },
             ]}
             value={statusFilter}
             onChange={setStatusFilter}
@@ -262,7 +375,7 @@ export function UsersPage() {
         />
       </Group>
 
-      {/* Stats (only show in list view for context) */}
+      {/* Stats */}
       {viewMode === 'list' && (
         <Group>
           <Badge variant="light" color="gray" size="lg">
@@ -275,12 +388,12 @@ export function UsersPage() {
             Invitados: {users.filter(u => u.status === 'INVITED').length}
           </Badge>
           <Badge variant="light" color="red" size="lg">
-            Suspendidos: {users.filter(u => u.status === 'SUSPENDED').length}
+            Inactivos: {users.filter(u => u.status === 'INACTIVE').length}
           </Badge>
         </Group>
       )}
 
-      {/* Content based on view mode */}
+      {/* Content */}
       {viewMode === 'tree' ? (
         <Paper withBorder>
           <OrganizationTree users={users} />
@@ -294,21 +407,12 @@ export function UsersPage() {
                   <Table.Th>Usuario</Table.Th>
                   <Table.Th>Cargo</Table.Th>
                   <Table.Th>Rol</Table.Th>
-                  <Table.Th>Filial / Área</Table.Th>
-                  <Table.Th>
-                    <Group gap={4}>
-                      Alcance
-                      <InfoTooltip
-                        label="El alcance define qué datos puede visualizar cada usuario según su rol y área asignada"
-                        multiline
-                        maxWidth={200}
-                      />
-                    </Group>
-                  </Table.Th>
+                  <Table.Th>Unidad organizacional</Table.Th>
+                  <Table.Th>Supervisor</Table.Th>
                   <Table.Th>
                     <Group gap={4}>
                       Estado
-                      <Tooltip label="Invitado: usuario pendiente de activación | Activo: usuario con acceso completo | Suspendido: acceso temporalmente deshabilitado" multiline w={250} withArrow>
+                      <Tooltip label="Invitado: pendiente de activación | Activo: acceso completo | Inactivo: acceso bloqueado" multiline w={250} withArrow>
                         <ActionIcon variant="subtle" color="gray" size="xs" style={{ cursor: 'help' }}>
                           <IconInfoCircle size={14} />
                         </ActionIcon>
@@ -320,7 +424,7 @@ export function UsersPage() {
               </Table.Thead>
               <Table.Tbody>
                 {filteredUsers.map((user) => (
-                  <Table.Tr key={user.id}>
+                  <Table.Tr key={user.id} style={{ opacity: user.status === 'INACTIVE' ? 0.6 : 1 }}>
                     <Table.Td>
                       <Group gap="sm">
                         <Avatar size="sm" radius="xl" color="dark">
@@ -333,23 +437,30 @@ export function UsersPage() {
                               : '(Sin completar)'}
                           </Text>
                           <Text size="xs" c="dimmed">{user.email}</Text>
+                          {user.phone && (
+                            <Text size="xs" c="dimmed">{user.phone}</Text>
+                          )}
                         </Box>
                       </Group>
                     </Table.Td>
                     <Table.Td>
-                      <Text size="sm">{user.jobTitle || '-'}</Text>
+                      <Text size="sm">{user.position || '-'}</Text>
+                      {user.employeeId && (
+                        <Text size="xs" c="dimmed">ID: {user.employeeId}</Text>
+                      )}
                     </Table.Td>
                     <Table.Td>
                       <Badge variant="light" color="dark">{user.role}</Badge>
                     </Table.Td>
                     <Table.Td>
-                      <Text size="sm">{user.subsidiary}</Text>
-                      <Text size="xs" c="dimmed">{user.primaryArea}</Text>
+                      <Text size="sm" lineClamp={2}>{user.organizationalUnitPath}</Text>
                     </Table.Td>
                     <Table.Td>
-                      <Text size="xs">
-                        {scopeModes.find(s => s.value === user.scopeMode)?.label || user.scopeMode}
-                      </Text>
+                      {user.supervisorName ? (
+                        <Text size="sm">{user.supervisorName}</Text>
+                      ) : (
+                        <Text size="xs" c="dimmed">-</Text>
+                      )}
                     </Table.Td>
                     <Table.Td>
                       <Badge variant="light" color={statusColors[user.status]}>
@@ -359,24 +470,24 @@ export function UsersPage() {
                     <Table.Td>
                       <Group gap={4}>
                         {user.status === 'ACTIVE' && (
-                          <Tooltip label="Suspender usuario" withArrow position="left">
+                          <Tooltip label="Desactivar usuario" withArrow position="left">
                             <ActionIcon
                               variant="subtle"
                               color="red"
                               size="sm"
-                              onClick={() => toggleStatus(user.id, 'SUSPENDED')}
+                              onClick={() => handleDeactivateClick(user)}
                             >
                               <IconPlayerPause size={16} />
                             </ActionIcon>
                           </Tooltip>
                         )}
-                        {user.status === 'SUSPENDED' && (
+                        {user.status === 'INACTIVE' && (
                           <Tooltip label="Reactivar usuario" withArrow position="left">
                             <ActionIcon
                               variant="subtle"
                               color="green"
                               size="sm"
-                              onClick={() => toggleStatus(user.id, 'ACTIVE')}
+                              onClick={() => reactivateUser(user.id)}
                             >
                               <IconPlayerPlay size={16} />
                             </ActionIcon>
@@ -432,7 +543,7 @@ export function UsersPage() {
         </Paper>
       )}
 
-      {/* Modal */}
+      {/* Modal crear/editar */}
       <Modal
         opened={opened}
         onClose={close}
@@ -454,6 +565,7 @@ export function UsersPage() {
               <TextInput
                 label="Nombre"
                 placeholder="Juan"
+                leftSection={<IconUser size={16} />}
                 {...form.getInputProps('firstName')}
               />
               <TextInput
@@ -464,9 +576,50 @@ export function UsersPage() {
             </Group>
 
             <TextInput
+              label="Teléfono"
+              placeholder="+56912345678"
+              withAsterisk
+              leftSection={<IconPhone size={16} />}
+              {...form.getInputProps('phone')}
+            />
+
+            <TextInput
+              label="ID de empleado"
+              placeholder="EMP001"
+              description="Identificador interno del empleado"
+              {...form.getInputProps('employeeId')}
+            />
+
+            <Divider label="Ubicación organizacional" labelPosition="center" />
+
+            <Select
+              label="Unidad organizacional"
+              placeholder="Seleccionar unidad"
+              data={organizationalUnits.map(u => ({ 
+                value: u.value, 
+                label: u.label 
+              }))}
+              withAsterisk
+              searchable
+              {...form.getInputProps('organizationalUnitId')}
+            />
+
+            <Select
               label="Cargo"
-              placeholder="Ej: Jefe de Operaciones"
-              {...form.getInputProps('jobTitle')}
+              placeholder="Seleccionar cargo"
+              data={positions}
+              searchable
+              {...form.getInputProps('positionId')}
+            />
+
+            <Select
+              label="Supervisor"
+              placeholder="Seleccionar supervisor"
+              data={availableSupervisors}
+              searchable
+              clearable
+              description="Usuario que supervisa directamente a este empleado"
+              {...form.getInputProps('supervisorId')}
             />
 
             <Divider label="Accesos" labelPosition="center" />
@@ -483,7 +636,7 @@ export function UsersPage() {
                 />
                 <Box mt={24}>
                   <InfoTooltip
-                    label="El rol determina los permisos y funcionalidades a las que el usuario tendrá acceso en la plataforma. Owner/Admin tiene acceso completo, mientras que otros roles tienen permisos específicos."
+                    label="El rol determina los permisos y funcionalidades a las que el usuario tendrá acceso en la plataforma."
                     multiline
                     maxWidth={280}
                   />
@@ -496,40 +649,6 @@ export function UsersPage() {
               )}
             </Stack>
 
-            <Group grow>
-              <Select
-                label="Filial primaria"
-                placeholder="Seleccionar filial"
-                data={subsidiaries}
-                withAsterisk
-                {...form.getInputProps('subsidiary')}
-              />
-              <Select
-                label="Área principal"
-                placeholder="Seleccionar área"
-                data={areas.map(a => ({ value: a.value, label: `${a.group} - ${a.label}` }))}
-                withAsterisk
-                {...form.getInputProps('primaryArea')}
-              />
-            </Group>
-
-            <Group gap="xs" align="flex-start">
-              <Select
-                label="Alcance de visualización"
-                description="Define qué datos puede ver este usuario"
-                data={scopeModes.map(s => ({ value: s.value, label: `${s.label} - ${s.description}` }))}
-                style={{ flex: 1 }}
-                {...form.getInputProps('scopeMode')}
-              />
-              <Box mt={24}>
-                <InfoTooltip
-                  label="El alcance de visualización controla qué información del sistema puede ver el usuario. Por ejemplo, 'Solo mi área' limita la visualización a datos de su área asignada, mientras que 'Toda la organización' permite ver todos los datos."
-                  multiline
-                  maxWidth={300}
-                />
-              </Box>
-            </Group>
-
             <Group justify="flex-end" mt="md">
               <Button variant="light" onClick={close}>Cancelar</Button>
               <Button type="submit">
@@ -540,15 +659,66 @@ export function UsersPage() {
         </form>
       </Modal>
 
+      {/* Modal desactivar con cascada */}
+      <Modal
+        opened={deactivateModal}
+        onClose={closeDeactivate}
+        title="Desactivar usuario"
+        size="md"
+      >
+        <Stack gap="md">
+          <Alert color="orange" icon={<IconAlertCircle size={16} />}>
+            <Text size="sm">
+              Estás a punto de desactivar a <strong>{userToDeactivate?.firstName} {userToDeactivate?.lastName}</strong>.
+            </Text>
+          </Alert>
+
+          {userToDeactivate && getSubordinates(userToDeactivate.id).length > 0 && (
+            <>
+              <Alert color="yellow" variant="light" icon={<IconUsers size={16} />}>
+                <Text size="sm">
+                  Este usuario supervisa a <strong>{getSubordinates(userToDeactivate.id).length} personas</strong>:
+                </Text>
+                <Group gap="xs" mt="xs">
+                  {getSubordinates(userToDeactivate.id).map(sub => (
+                    <Badge key={sub.id} size="sm" variant="light">
+                      {sub.firstName} {sub.lastName}
+                    </Badge>
+                  ))}
+                </Group>
+              </Alert>
+
+              <Checkbox
+                checked={cascadeDeactivate}
+                onChange={(e) => setCascadeDeactivate(e.currentTarget.checked)}
+                label="Desactivar también a los usuarios que supervisa"
+                description="Si no marcas esta opción, los subordinados quedarán sin supervisor asignado"
+              />
+            </>
+          )}
+
+          <Text size="sm" c="dimmed">
+            El usuario desactivado no podrá iniciar sesión, pero sus datos históricos se conservarán.
+          </Text>
+
+          <Group justify="flex-end">
+            <Button variant="light" onClick={closeDeactivate}>Cancelar</Button>
+            <Button color="red" onClick={handleConfirmDeactivate}>
+              Desactivar
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
       {/* Wireframe annotation */}
-      <Alert variant="light" color="yellow" title="AC: S1-05.1 a S1-05.5" icon={<IconAlertCircle size={16} />}>
+      <Alert variant="light" color="yellow" title="RF-S1-01.09, HU-S1-11, HU-S1-14" icon={<IconAlertCircle size={16} />}>
         <Text size="xs">
-          • Lista muestra: nombre, email, cargo, rol, filial primaria, área principal, alcance, estado<br />
-          • Filtro por estado y búsqueda por email/nombre<br />
-          • Crear usuario Invited con rol + filial + área obligatorios<br />
-          • Reenviar genera token nuevo / Revocar invalida token<br />
-          • Suspender/reactivar usuarios sin perder historial<br />
-          • Alcance: mi área / mi rama / áreas específicas / toda filial / filiales seleccionadas / toda org
+          • Campos: email, nombre, apellido, teléfono, ID empleado, unidad org., cargo, supervisor, rol<br/>
+          • Usuario Invited: pendiente de activación<br/>
+          • Reenviar/revocar invitación<br/>
+          • HU-S1-14: Al desactivar supervisor, preguntar si desactivar subordinados<br/>
+          • Subordinados sin supervisor quedan con campo vacío<br/>
+          • Usuarios inactivos no aparecen en lista de supervisores
         </Text>
       </Alert>
     </Stack>

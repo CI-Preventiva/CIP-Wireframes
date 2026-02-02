@@ -31,7 +31,10 @@ import {
   IconSettings,
   IconUser,
   IconShieldCheck,
-  IconChecklist
+  IconChecklist,
+  IconHierarchy2,
+  IconBriefcase,
+  IconForms
 } from '@tabler/icons-react'
 
 const navItems = [
@@ -48,13 +51,21 @@ const navItems = [
     needsAttention: true
   },
   {
-    label: 'Administración',
-    icon: IconSettings,
+    label: 'Estructura Organizacional',
+    icon: IconSitemap,
     children: [
-      { label: 'Filiales', icon: IconBuilding, path: '/admin/subsidiaries' },
-      { label: 'Áreas', icon: IconSitemap, path: '/admin/areas' },
-      { label: 'Roles', icon: IconShield, path: '/admin/roles' },
+      { label: 'Niveles Jerárquicos', icon: IconHierarchy2, path: '/admin/hierarchy-levels' },
+      { label: 'Unidades Organizacionales', icon: IconBuilding, path: '/admin/organizational-units' },
+      { label: 'Cargos', icon: IconBriefcase, path: '/admin/positions' },
+    ]
+  },
+  {
+    label: 'Gestión de Usuarios',
+    icon: IconUsers,
+    children: [
       { label: 'Usuarios', icon: IconUsers, path: '/admin/users' },
+      { label: 'Campos de Perfil', icon: IconForms, path: '/admin/profile-fields' },
+      { label: 'Roles y Permisos', icon: IconShield, path: '/admin/roles' },
     ]
   },
   {
@@ -69,7 +80,7 @@ const navItems = [
 
 export function AppLayout() {
   const [opened, { toggle }] = useDisclosure()
-  const [expandedSections, setExpandedSections] = useState<string[]>(['Administración'])
+  const [expandedSections, setExpandedSections] = useState<string[]>(['Estructura Organizacional', 'Gestión de Usuarios'])
   const location = useLocation()
   const isSuperAdmin = location.pathname.startsWith('/superadmin')
 
@@ -88,11 +99,14 @@ export function AppLayout() {
     // Mapeo manual de rutas a nombres amigables (MVP simple)
     const nameMap: Record<string, string> = {
       'admin': 'Administración',
-      'subsidiaries': 'Filiales',
-      'areas': 'Áreas',
-      'roles': 'Roles',
+      'hierarchy-levels': 'Niveles Jerárquicos',
+      'organizational-units': 'Unidades Organizacionales',
+      'positions': 'Cargos',
+      'profile-fields': 'Campos de Perfil',
+      'roles': 'Roles y Permisos',
       'users': 'Usuarios',
       'bulk-import': 'Carga Masiva',
+      'my-profile': 'Mi Perfil',
       'superadmin': 'SuperAdmin',
       'organizations': 'Organizaciones',
       'onboarding': 'Configuración Inicial'
@@ -150,17 +164,20 @@ export function AppLayout() {
           key={item.path}
           component={NavLink}
           to={item.path!}
-          label={
-            <Group justify="space-between">
-              <Text size="sm">{item.label}</Text>
-              {item.needsAttention && (
-                <Box style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} />
-              )}
-            </Group>
-          }
+          label={item.label}
           leftSection={<item.icon size={18} stroke={1.5} />}
           active={location.pathname === item.path}
-          rightSection={item.badge ? <Badge size="xs" variant="light">{item.badge}</Badge> : null}
+          rightSection={
+            item.badge ? (
+              <Badge 
+                size="xs" 
+                variant={item.needsAttention ? "filled" : "light"} 
+                color={item.needsAttention ? "orange" : "gray"}
+              >
+                {item.badge}
+              </Badge>
+            ) : null
+          }
         />
       )
     })
@@ -227,7 +244,11 @@ export function AppLayout() {
 
               <Menu.Dropdown>
                 <Menu.Label>Cuenta</Menu.Label>
-                <Menu.Item leftSection={<IconUser size={14} />}>
+                <Menu.Item 
+                  leftSection={<IconUser size={14} />}
+                  component={NavLink}
+                  to="/my-profile"
+                >
                   Mi Perfil
                 </Menu.Item>
                 <Menu.Item leftSection={<IconSettings size={14} />}>

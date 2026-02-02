@@ -12,39 +12,39 @@ import {
   Alert
 } from '@mantine/core'
 import {
-  IconBuilding,
   IconSitemap,
-  IconShield,
   IconUsers,
   IconAlertCircle,
-  IconArrowRight
+  IconArrowRight,
+  IconHierarchy2,
+  IconBriefcase
 } from '@tabler/icons-react'
 
 const quickActions = [
   {
-    title: 'Filiales',
-    description: 'Gestionar filiales y sub-empresas',
-    icon: IconBuilding,
-    path: '/admin/subsidiaries',
+    title: 'Unidades Org.',
+    description: 'Estructura de 3 niveles',
+    icon: IconSitemap,
+    path: '/admin/organizational-units',
+    count: 26
+  },
+  {
+    title: 'Niveles',
+    description: 'Definición de jerarquía',
+    icon: IconHierarchy2,
+    path: '/admin/hierarchy-levels',
     count: 3
   },
   {
-    title: 'Áreas',
-    description: 'Organigrama y estructura jerárquica',
-    icon: IconSitemap,
-    path: '/admin/areas',
-    count: 12
-  },
-  {
-    title: 'Roles',
-    description: 'Permisos y control de acceso',
-    icon: IconShield,
-    path: '/admin/roles',
-    count: 5
+    title: 'Cargos',
+    description: 'Puestos y familias',
+    icon: IconBriefcase,
+    path: '/admin/positions',
+    count: 15
   },
   {
     title: 'Usuarios',
-    description: 'Administrar usuarios del sistema',
+    description: 'Gestión y perfiles',
     icon: IconUsers,
     path: '/admin/users',
     count: 28

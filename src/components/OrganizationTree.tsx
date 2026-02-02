@@ -16,25 +16,29 @@ import {
     IconChevronDown,
     IconChevronRight,
     IconBuilding,
-    IconUsers
+    IconUsers,
+    IconHierarchy
 } from '@tabler/icons-react'
 
-// Types
+// Types - Updated to match new user structure
 interface User {
     id: string
     email: string
     firstName?: string
     lastName?: string
-    jobTitle?: string
+    phone?: string
+    position?: string
+    employeeId?: string
     role: string
-    subsidiary: string
-    primaryArea: string
-    status: 'INVITED' | 'ACTIVE' | 'SUSPENDED'
+    organizationalUnitPath: string // e.g., "División > Área > Subárea"
+    supervisorId?: string
+    supervisorName?: string
+    status: 'INVITED' | 'ACTIVE' | 'INACTIVE'
 }
 
 interface OrgNode {
     id: string
-    type: 'user' | 'area' | 'subsidiary'
+    type: 'user' | 'level1' | 'level2' | 'level3'
     name: string
     subtitle?: string
     user?: User
@@ -45,78 +49,111 @@ interface OrgNode {
 const statusColors: Record<string, string> = {
     ACTIVE: 'green',
     INVITED: 'blue',
-    SUSPENDED: 'red'
+    INACTIVE: 'red'
 }
 
-// Build organizational tree from users
+// Build organizational tree from users with 3-level hierarchy
 function buildOrgTree(users: User[]): OrgNode {
-    // Group users by subsidiary, then by area
-    const subsidiaryMap = new Map<string, Map<string, User[]>>()
+    // Parse the organizational unit path to extract levels
+    const level1Map = new Map<string, Map<string, Map<string, User[]>>>()
 
     users.forEach(user => {
-        if (!subsidiaryMap.has(user.subsidiary)) {
-            subsidiaryMap.set(user.subsidiary, new Map())
+        // Parse path like "División Industrial > Producción > Planta Norte"
+        const parts = user.organizationalUnitPath.split(' > ').map(p => p.trim())
+        const level1 = parts[0] || 'Sin asignar'
+        const level2 = parts[1] || 'Sin asignar'
+        const level3 = parts[2] || 'Sin asignar'
+
+        if (!level1Map.has(level1)) {
+            level1Map.set(level1, new Map())
         }
-        const areaMap = subsidiaryMap.get(user.subsidiary)!
-        if (!areaMap.has(user.primaryArea)) {
-            areaMap.set(user.primaryArea, [])
+        const level2Map = level1Map.get(level1)!
+        
+        if (!level2Map.has(level2)) {
+            level2Map.set(level2, new Map())
         }
-        areaMap.get(user.primaryArea)!.push(user)
+        const level3Map = level2Map.get(level2)!
+        
+        if (!level3Map.has(level3)) {
+            level3Map.set(level3, [])
+        }
+        level3Map.get(level3)!.push(user)
     })
 
     // Build tree structure
-    const subsidiaryNodes: OrgNode[] = []
+    const level1Nodes: OrgNode[] = []
 
-    subsidiaryMap.forEach((areaMap, subsidiaryName) => {
-        const areaNodes: OrgNode[] = []
+    level1Map.forEach((level2Map, level1Name) => {
+        const level2Nodes: OrgNode[] = []
 
-        areaMap.forEach((areaUsers, areaName) => {
-            // Sort users by role priority
-            const sortedUsers = [...areaUsers].sort((a, b) => {
-                const rolePriority: Record<string, number> = {
-                    'Owner/Admin': 1,
-                    'Supervisor': 2,
-                    'Auditor': 3,
-                    'Trabajador': 4
-                }
-                return (rolePriority[a.role] || 5) - (rolePriority[b.role] || 5)
+        level2Map.forEach((level3Map, level2Name) => {
+            const level3Nodes: OrgNode[] = []
+
+            level3Map.forEach((level3Users, level3Name) => {
+                // Sort users by role priority
+                const sortedUsers = [...level3Users].sort((a, b) => {
+                    const rolePriority: Record<string, number> = {
+                        'Owner': 1,
+                        'Admin': 2,
+                        'Supervisor': 3,
+                        'Auditor': 4,
+                        'Trabajador': 5
+                    }
+                    return (rolePriority[a.role] || 6) - (rolePriority[b.role] || 6)
+                })
+
+                const userNodes: OrgNode[] = sortedUsers.map(user => ({
+                    id: `user-${user.id}`,
+                    type: 'user' as const,
+                    name: user.firstName && user.lastName
+                        ? `${user.firstName} ${user.lastName}`
+                        : user.email,
+                    subtitle: user.position || user.role,
+                    user
+                }))
+
+                level3Nodes.push({
+                    id: `level3-${level1Name}-${level2Name}-${level3Name}`,
+                    type: 'level3' as const,
+                    name: level3Name,
+                    subtitle: `${level3Users.length} usuario${level3Users.length !== 1 ? 's' : ''}`,
+                    children: userNodes
+                })
             })
 
-            const userNodes: OrgNode[] = sortedUsers.map(user => ({
-                id: `user-${user.id}`,
-                type: 'user' as const,
-                name: user.firstName && user.lastName
-                    ? `${user.firstName} ${user.lastName}`
-                    : user.email,
-                subtitle: user.jobTitle || user.role,
-                user
-            }))
+            // Calculate total users in level2
+            const totalUsersInLevel2 = Array.from(level3Map.values()).reduce((sum, users) => sum + users.length, 0)
 
-            areaNodes.push({
-                id: `area-${subsidiaryName}-${areaName}`,
-                type: 'area' as const,
-                name: areaName,
-                subtitle: `${areaUsers.length} usuario${areaUsers.length !== 1 ? 's' : ''}`,
-                children: userNodes
+            level2Nodes.push({
+                id: `level2-${level1Name}-${level2Name}`,
+                type: 'level2' as const,
+                name: level2Name,
+                subtitle: `${level3Nodes.length} subárea${level3Nodes.length !== 1 ? 's' : ''} · ${totalUsersInLevel2} usuario${totalUsersInLevel2 !== 1 ? 's' : ''}`,
+                children: level3Nodes
             })
         })
 
-        subsidiaryNodes.push({
-            id: `subsidiary-${subsidiaryName}`,
-            type: 'subsidiary' as const,
-            name: subsidiaryName,
-            subtitle: `${areaNodes.length} área${areaNodes.length !== 1 ? 's' : ''}`,
-            children: areaNodes
+        // Calculate total users in level1
+        const totalUsersInLevel1 = level2Nodes.reduce((sum, node) => {
+            return sum + (node.children?.reduce((s, n) => s + (n.children?.length || 0), 0) || 0)
+        }, 0)
+
+        level1Nodes.push({
+            id: `level1-${level1Name}`,
+            type: 'level1' as const,
+            name: level1Name,
+            subtitle: `${level2Nodes.length} área${level2Nodes.length !== 1 ? 's' : ''} · ${totalUsersInLevel1} usuario${totalUsersInLevel1 !== 1 ? 's' : ''}`,
+            children: level2Nodes
         })
     })
 
     // Root node
     return {
         id: 'org-root',
-        type: 'subsidiary' as const,
+        type: 'level1' as const,
         name: 'Organización',
-        subtitle: `${subsidiaryNodes.length} filial${subsidiaryNodes.length !== 1 ? 'es' : ''}`,
-        children: subsidiaryNodes
+        subtitle: `${level1Nodes.length} división${level1Nodes.length !== 1 ? 'es' : ''}`,
+        children: level1Nodes
     }
 }
 
@@ -129,13 +166,19 @@ const nodeStyles = {
         borderRadius: 12,
         cursor: 'default'
     },
-    area: {
+    level1: {
         minWidth: 160,
         padding: '10px 14px',
         borderRadius: 10,
         cursor: 'pointer'
     },
-    subsidiary: {
+    level2: {
+        minWidth: 160,
+        padding: '10px 14px',
+        borderRadius: 10,
+        cursor: 'pointer'
+    },
+    level3: {
         minWidth: 160,
         padding: '10px 14px',
         borderRadius: 10,
@@ -171,6 +214,13 @@ function UserNode({ node }: { node: OrgNode }) {
                     <Text size="xs" c="dimmed" ta="center" lineClamp={1}>
                         {node.subtitle}
                     </Text>
+                    {user.supervisorName && (
+                        <Tooltip label={`Supervisor: ${user.supervisorName}`}>
+                            <Text size="xs" c="blue" ta="center" lineClamp={1}>
+                                → {user.supervisorName}
+                            </Text>
+                        </Tooltip>
+                    )}
                     <Badge
                         size="xs"
                         variant="light"
@@ -178,7 +228,7 @@ function UserNode({ node }: { node: OrgNode }) {
                         mt={4}
                     >
                         {user.status === 'ACTIVE' ? 'Activo' :
-                            user.status === 'INVITED' ? 'Invitado' : 'Suspendido'}
+                            user.status === 'INVITED' ? 'Invitado' : 'Inactivo'}
                     </Badge>
                 </Stack>
             </Stack>
@@ -186,7 +236,7 @@ function UserNode({ node }: { node: OrgNode }) {
     )
 }
 
-// Group node component (area or subsidiary)
+// Group node component (level1, level2, or level3)
 function GroupNode({
     node,
     expanded,
@@ -199,17 +249,42 @@ function GroupNode({
     hasChildren: boolean
 }) {
     const theme = useMantineTheme()
-    const isSubsidiary = node.type === 'subsidiary'
-
-    const bgColor = isSubsidiary
+    
+    const bgColor = node.type === 'level1'
         ? theme.colors.blue[0]
+        : node.type === 'level2'
+        ? theme.colors.violet[0]
         : theme.colors.gray[0]
 
-    const borderColor = isSubsidiary
+    const borderColor = node.type === 'level1'
         ? theme.colors.blue[3]
+        : node.type === 'level2'
+        ? theme.colors.violet[3]
         : theme.colors.gray[3]
 
-    const iconColor = isSubsidiary ? 'blue' : 'gray'
+    const iconColor = node.type === 'level1' ? 'blue' : node.type === 'level2' ? 'violet' : 'gray'
+
+    const getIcon = () => {
+        switch (node.type) {
+            case 'level1':
+                return <IconBuilding size={18} color={theme.colors.blue[6]} />
+            case 'level2':
+                return <IconHierarchy size={18} color={theme.colors.violet[6]} />
+            case 'level3':
+                return <IconUsers size={18} color={theme.colors.gray[6]} />
+            default:
+                return <IconBuilding size={18} />
+        }
+    }
+
+    const getTooltipLabel = () => {
+        switch (node.type) {
+            case 'level1': return 'División'
+            case 'level2': return 'Área'
+            case 'level3': return 'Subárea'
+            default: return 'Unidad'
+        }
+    }
 
     return (
         <Paper
@@ -236,13 +311,9 @@ function GroupNode({
                         )}
                     </ActionIcon>
                 )}
-                <Tooltip label={node.type === 'subsidiary' ? 'Filial' : 'Área'}>
+                <Tooltip label={getTooltipLabel()}>
                     <Box>
-                        {isSubsidiary ? (
-                            <IconBuilding size={18} color={theme.colors.blue[6]} />
-                        ) : (
-                            <IconUsers size={18} color={theme.colors.gray[6]} />
-                        )}
+                        {getIcon()}
                     </Box>
                 </Tooltip>
                 <Stack gap={0}>

@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "cip-test-7b7a5"
+  },
+  "targets": {
+    "cip-test-7b7a5": {
+      "hosting": {
+        "wireframes": [
+          "cip-test-7b7a5-wireframes"
+        ]
+      }
+    }
+  }
+}

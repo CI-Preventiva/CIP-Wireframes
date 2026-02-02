@@ -12,12 +12,19 @@ import { ActivateAccountPage } from './pages/auth/ActivateAccountPage'
 import { HomePage } from './pages/HomePage'
 import { OnboardingChecklistPage } from './pages/onboarding/OnboardingChecklistPage'
 
-// Admin pages
-import { SubsidiariesPage } from './pages/admin/SubsidiariesPage'
-import { AreasPage } from './pages/admin/AreasPage'
-import { RolesPage } from './pages/admin/RolesPage'
+// Admin pages - Organizational Structure
+import { HierarchyLevelsPage } from './pages/admin/HierarchyLevelsPage'
+import { OrganizationalUnitsPage } from './pages/admin/OrganizationalUnitsPage'
+import { PositionsPage } from './pages/admin/PositionsPage'
+
+// Admin pages - User Management
 import { UsersPage } from './pages/admin/UsersPage'
 import { BulkImportPage } from './pages/admin/BulkImportPage'
+import { ProfileFieldsPage } from './pages/admin/ProfileFieldsPage'
+import { RolesPage } from './pages/admin/RolesPage'
+
+// User pages
+import { MyProfilePage } from './pages/user/MyProfilePage'
 
 // SuperAdmin pages
 import { OrganizationsPage } from './pages/superadmin/OrganizationsPage'
@@ -38,12 +45,19 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/onboarding" element={<OnboardingChecklistPage />} />
         
-        {/* Admin */}
-        <Route path="/admin/subsidiaries" element={<SubsidiariesPage />} />
-        <Route path="/admin/areas" element={<AreasPage />} />
-        <Route path="/admin/roles" element={<RolesPage />} />
+        {/* Admin - Organizational Structure */}
+        <Route path="/admin/hierarchy-levels" element={<HierarchyLevelsPage />} />
+        <Route path="/admin/organizational-units" element={<OrganizationalUnitsPage />} />
+        <Route path="/admin/positions" element={<PositionsPage />} />
+        
+        {/* Admin - User Management */}
         <Route path="/admin/users" element={<UsersPage />} />
         <Route path="/admin/users/bulk-import" element={<BulkImportPage />} />
+        <Route path="/admin/profile-fields" element={<ProfileFieldsPage />} />
+        <Route path="/admin/roles" element={<RolesPage />} />
+        
+        {/* User pages */}
+        <Route path="/my-profile" element={<MyProfilePage />} />
         
         {/* SuperAdmin */}
         <Route path="/superadmin/organizations" element={<OrganizationsPage />} />
